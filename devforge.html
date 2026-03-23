@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevForge — AI Project Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#080810;--surface:#0e0e1a;--card:#13131f;--card2:#18182a;
+      --border:#252535;--border2:#2e2e45;
+      --primary:#00e5b4;--primary-dim:rgba(0,229,180,.1);--primary-glow:rgba(0,229,180,.3);
+      --purple:#8b7cf8;--purple-dim:rgba(139,124,248,.12);
+      --amber:#f5a623;--red:#ff4d6d;--green:#00c896;
+      --text:#e0e0f0;--muted:#6a6a85;--dim:#9a9ab5;
+      --font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--primary)}
+
+    /* SHELL */
+    .shell{display:flex;height:100vh;overflow:hidden}
+
+    /* SIDEBAR */
+    .sidebar{width:230px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column}
+    .logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+    .logo-mark{font-weight:800;font-size:17px;letter-spacing:-.5px;display:flex;align-items:center;gap:9px}
+    .logo-icon{width:30px;height:30px;background:var(--primary);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:16px;flex-shrink:0}
+    .logo-sub{font-size:9.5px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;font-family:var(--mono)}
+    .nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto}
+    .nav-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:10px 10px 4px;font-family:var(--mono)}
+    .nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--dim);font-size:13px;font-weight:600;transition:all .15s;border:1px solid transparent;user-select:none;letter-spacing:.2px}
+    .nav-item:hover{background:var(--card);color:var(--text)}
+    .nav-item.active{background:var(--primary-dim);color:var(--primary);border-color:rgba(0,229,180,.2)}
+    .nav-item svg{flex-shrink:0;width:16px;height:16px}
+    .nav-badge{margin-left:auto;background:var(--primary);color:var(--bg);font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;font-family:var(--mono)}
+    .sidebar-status{padding:14px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+    .status-row{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;transition:background .3s}
+    .dot.ok{background:var(--green)}
+    .dot.checking{background:var(--amber);animation:pulse 1s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* MAIN */
+    .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+    .page{display:none;flex-direction:column;height:100%;overflow:hidden}
+    .page.active{display:flex}
+    .page-header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surface)}
+    .page-title{font-size:19px;font-weight:800;letter-spacing:-.5px}
+    .page-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;border:none;transition:all .15s;letter-spacing:.2px}
+    .btn-primary{background:var(--primary);color:var(--bg)}
+    .btn-primary:hover:not(:disabled){background:#00ffd0;transform:translateY(-1px);box-shadow:0 4px 20px var(--primary-glow)}
+    .btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--border)}
+    .btn-ghost:hover:not(:disabled){border-color:var(--border2);color:var(--text);background:var(--card)}
+    .btn-purple{background:var(--purple);color:#fff}
+    .btn-purple:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
+    .btn-danger{background:transparent;color:var(--red);border:1px solid rgba(255,77,109,.3)}
+    .btn-danger:hover:not(:disabled){background:rgba(255,77,109,.08)}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .btn-sm{padding:5px 11px;font-size:11px;border-radius:6px}
+    .btn-icon{width:36px;height:36px;padding:0;border-radius:8px;justify-content:center}
+
+    /* HOME */
+    .home-body{flex:1;overflow-y:auto;padding:26px 28px}
+    .section-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-family:var(--mono);display:flex;align-items:center;gap:10px}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--primary)}
+    .stat-card.purple::before{background:var(--purple)}
+    .stat-card.amber::before{background:var(--amber)}
+    .stat-card.red::before{background:var(--red)}
+    .stat-val{font-size:26px;font-weight:800;letter-spacing:-1px;font-family:var(--mono)}
+    .stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+    .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+    .how-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .15s}
+    .how-card:hover{border-color:var(--border2)}
+    .how-num{font-size:11px;font-family:var(--mono);color:var(--primary);font-weight:700;margin-bottom:8px;letter-spacing:1px}
+    .how-title{font-size:14px;font-weight:700;margin-bottom:5px}
+    .how-desc{font-size:12px;color:var(--dim);line-height:1.6}
+    .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+    .proj-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .15s}
+    .proj-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+    .proj-name{font-size:14px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .proj-meta{font-size:10px;color:var(--muted);font-family:var(--mono)}
+    .proj-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:10px}
+    .tag{padding:2px 8px;border-radius:4px;font-size:10px;font-family:var(--mono);background:var(--card2);color:var(--dim)}
+    .empty-box{text-align:center;padding:36px 20px;color:var(--muted);font-size:12px;border:1px dashed var(--border);border-radius:12px;margin-top:8px}
+    .empty-box svg{margin-bottom:10px;opacity:.25}
+
+    /* BUILDER */
+    .builder-wrap{flex:1;overflow:hidden;display:grid;grid-template-columns:1fr 360px}
+    .chat-col{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+    .chat-toolbar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--surface)}
+    .model-sel{flex:1;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:11px;font-family:var(--mono);color:var(--text);outline:none;cursor:pointer}
+    .model-sel:focus{border-color:var(--primary)}
+    .model-sel option{background:var(--card)}
+    .chat-messages{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:18px}
+    .chat-welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;gap:10px}
+    .welcome-ring{width:70px;height:70px;background:var(--primary-dim);border:1px solid rgba(0,229,180,.2);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;font-size:30px}
+    .welcome-title{font-size:20px;font-weight:800;letter-spacing:-.5px}
+    .welcome-sub{font-size:12px;color:var(--muted);max-width:300px;line-height:1.65}
+    .msg{display:flex;gap:12px;animation:mIn .2s ease}
+    @keyframes mIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .msg.user{flex-direction:row-reverse}
+    .msg-av{width:30px;height:30px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+    .msg.user .msg-av{background:var(--primary);color:var(--bg)}
+    .msg.ai .msg-av{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(139,124,248,.3);font-size:11px}
+    .msg-body{flex:1;min-width:0}
+    .msg.user .msg-body{display:flex;flex-direction:column;align-items:flex-end}
+    .msg-bub{padding:12px 15px;border-radius:12px;font-size:13px;line-height:1.7;max-width:92%}
+    .msg.user .msg-bub{background:var(--primary-dim);border:1px solid rgba(0,229,180,.18);border-radius:12px 4px 12px 12px}
+    .msg.ai .msg-bub{background:var(--card);border:1px solid var(--border);border-radius:4px 12px 12px 12px;width:100%}
+    .msg-bub p{margin:0 0 7px}
+    .msg-bub p:last-child{margin:0}
+    .msg-bub pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:10px 0}
+    .msg-bub .code-top{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px}
+    .msg-bub .code-lang{color:var(--primary)}
+    .msg-bub .code-fname{color:var(--dim)}
+    .copy-code{background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;transition:all .15s}
+    .copy-code:hover{color:var(--primary);background:var(--primary-dim)}
+    .msg-bub pre code{display:block;padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.6;overflow-x:auto;background:transparent!important}
+    .msg-bub code:not(pre code){background:var(--card2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:11px;color:var(--primary)}
+    .msg-bub h1,.msg-bub h2,.msg-bub h3{margin:10px 0 5px;font-weight:700}
+    .msg-bub h3{font-size:13px}
+    .msg-bub ul,.msg-bub ol{padding-left:18px;margin:5px 0}
+    .msg-bub li{margin:2px 0;font-size:13px}
+    .msg-bub a{color:var(--primary)}
+    .msg-bub strong{color:var(--text)}
+    .thinking-bub{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--card);border:1px solid var(--border);border-radius:4px 12px 12px 12px;font-size:12px;color:var(--muted);font-family:var(--mono)}
+    .dots{display:flex;gap:3px}
+    .dot-a{width:5px;height:5px;border-radius:50%;background:var(--primary);animation:dp 1.4s ease-in-out infinite}
+    .dot-a:nth-child(2){animation-delay:.2s}
+    .dot-a:nth-child(3){animation-delay:.4s}
+    @keyframes dp{0%,60%,100%{transform:scale(.7);opacity:.5}30%{transform:scale(1);opacity:1}}
+    .chat-input-wrap{padding:14px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+    .quick-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .chip{padding:3px 10px;border-radius:6px;font-size:10px;background:var(--card2);border:1px solid var(--border);color:var(--dim);cursor:pointer;transition:all .15s;font-family:var(--mono)}
+    .chip:hover{border-color:var(--primary);color:var(--primary)}
+    .input-row{display:flex;gap:8px;align-items:flex-end}
+    .chat-ta{flex:1;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-size:13px;font-family:var(--font);color:var(--text);outline:none;resize:none;min-height:42px;max-height:140px;line-height:1.5;transition:border-color .15s}
+    .chat-ta:focus{border-color:var(--primary)}
+    .chat-ta::placeholder{color:var(--muted)}
+    .send-btn{width:42px;height:42px;border-radius:9px;background:var(--primary);border:none;color:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+    .send-btn:hover:not(:disabled){background:#00ffd0;transform:translateY(-1px)}
+    .send-btn:disabled{opacity:.4;cursor:not-allowed}
+    .typing-cur::after{content:'▋';animation:bl .7s step-end infinite;color:var(--primary)}
+    @keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
+
+    /* FILE PANEL */
+    .files-col{display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+    .panel-hdr{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .panel-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:var(--mono)}
+    .file-tree{overflow-y:auto;flex-shrink:0;max-height:180px;padding:6px;border-bottom:1px solid var(--border)}
+    .f-item{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:5px;cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--dim);transition:all .1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .f-item:hover{background:var(--card);color:var(--text)}
+    .f-item.active{background:var(--primary-dim);color:var(--primary)}
+    .f-ext{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--card2);color:var(--muted);flex-shrink:0}
+    .code-view{flex:1;overflow:auto;position:relative}
+    .code-view pre{margin:0;min-height:100%}
+    .code-view code{display:block;padding:14px 16px;font-family:var(--mono);font-size:11px;line-height:1.65;background:var(--bg)!important}
+    .no-files{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:12px;gap:8px;padding:30px;text-align:center}
+    .no-files svg{opacity:.2}
+    .export-bar{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:7px;flex-shrink:0;background:var(--surface)}
+    .file-count-badge{background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:3px 9px;font-size:11px;font-family:var(--mono);color:var(--dim);display:flex;align-items:center;gap:5px;margin-right:auto}
+
+    /* SETTINGS */
+    .settings-body{flex:1;overflow-y:auto;padding:26px 28px;max-width:700px}
+    .s-sec{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:22px;margin-bottom:18px}
+    .s-sec-hdr{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+    .s-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+    .s-icon.teal{background:var(--primary-dim)}
+    .s-icon.purple{background:var(--purple-dim)}
+    .s-icon.gray{background:var(--card2)}
+    .s-title{font-size:14px;font-weight:800}
+    .s-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.55;font-family:var(--mono)}
+    .f-group{margin-bottom:14px}
+    .f-lbl{display:block;font-size:11px;font-weight:700;color:var(--dim);margin-bottom:5px;font-family:var(--mono);letter-spacing:.5px}
+    .f-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;transition:border-color .15s}
+    .f-inp:focus{border-color:var(--primary)}
+    .f-inp::placeholder{color:var(--muted)}
+    .f-hint{font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--mono);line-height:1.5}
+    .f-hint a{color:var(--primary);text-decoration:none}
+    .f-hint a:hover{text-decoration:underline}
+    .pw-wrap{position:relative}
+    .pw-wrap .f-inp{padding-right:40px}
+    .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px}
+    .models-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .m-opt{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .15s}
+    .m-opt:hover{border-color:var(--border2)}
+    .m-opt.sel{border-color:var(--primary);background:var(--primary-dim)}
+    .m-name{font-size:11px;font-weight:700;font-family:var(--mono)}
+    .m-free{display:inline-block;padding:1px 5px;border-radius:3px;font-size:8.5px;background:rgba(0,229,180,.15);color:var(--primary);font-family:var(--mono);font-weight:700;letter-spacing:.5px;margin-top:2px}
+    .m-desc{font-size:10px;color:var(--muted);margin-top:2px}
+    .save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+
+    /* MODAL */
+    .overlay{position:fixed;inset:0;background:rgba(8,8,16,.88);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:1000;animation:fIn .15s ease}
+    .overlay.open{display:flex}
+    @keyframes fIn{from{opacity:0}to{opacity:1}}
+    .modal{background:var(--card);border:1px solid var(--border2);border-radius:15px;width:510px;max-width:92vw;animation:mIn2 .2s ease;overflow:hidden}
+    @keyframes mIn2{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .modal-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal-hdr h2{font-size:15px;font-weight:800}
+    .x-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:19px;transition:color .15s;line-height:1}
+    .x-btn:hover{color:var(--text)}
+    .modal-body{padding:22px}
+    .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:7px;justify-content:flex-end}
+    .seg{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:18px}
+    .seg-opt{flex:1;padding:9px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);transition:all .15s}
+    .seg-opt.on{background:var(--primary-dim);color:var(--primary)}
+    .radio-grp{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+    .r-item{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:7px;cursor:pointer;border:1px solid var(--border);transition:all .15s}
+    .r-item:hover{border-color:var(--border2)}
+    .r-item.on{border-color:var(--primary);background:var(--primary-dim)}
+    .r-circle{width:15px;height:15px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .r-item.on .r-circle{border-color:var(--primary)}
+    .r-item.on .r-circle::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--primary)}
+    .r-lbl{font-size:12px;font-weight:700}
+    .r-sub{font-size:10px;color:var(--muted)}
+    .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:12px}
+    .progress-fill{height:100%;background:var(--primary);border-radius:2px;transition:width .4s ease}
+    .export-log{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--dim);max-height:140px;overflow-y:auto;margin-top:12px}
+    .log-line{display:flex;gap:8px}
+    .log-ok{color:var(--green)}
+    .log-err{color:var(--red)}
+    .log-info{color:var(--primary)}
+
+    /* TOAST */
+    .toasts{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:7px;z-index:2000;pointer-events:none}
+    .toast{padding:11px 15px;border-radius:9px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;max-width:310px;animation:tIn .25s ease;pointer-events:all;font-family:var(--mono)}
+    @keyframes tIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+    .toast.ok{background:#0a2418;border:1px solid var(--green);color:var(--green)}
+    .toast.err{background:#2a0a12;border:1px solid var(--red);color:var(--red)}
+    .toast.inf{background:#10102a;border:1px solid var(--purple);color:#a59ef8}
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon">⚡</div>
+        DevForge
+      </div>
+      <div class="logo-sub">AI Project Builder</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Menu</div>
+      <div class="nav-item active" onclick="nav('home')" id="nav-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="nav('builder')" id="nav-builder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        AI Builder
+        <span class="nav-badge" id="proj-badge" style="display:none">0</span>
+      </div>
+      <div class="nav-label">Config</div>
+      <div class="nav-item" onclick="nav('settings')" id="nav-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h2M2 12h2M4.93 4.93l1.41 1.41M18.66 18.66l1.41 1.41M12 2v2M12 20v2"/></svg>
+        Settings
+      </div>
+    </nav>
+    <div class="sidebar-status">
+      <div class="status-row"><div class="dot" id="dot-or"></div>OpenRouter API</div>
+      <div class="status-row"><div class="dot" id="dot-gh"></div>GitHub Token</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Build AI-powered projects & export to GitHub</div>
+        </div>
+        <button class="btn btn-primary" onclick="nav('builder')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Project
+        </button>
+      </div>
+      <div class="home-body">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-val" id="stat-projects">0</div>
+            <div class="stat-lbl">Projects Built</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-val" id="stat-files">0</div>
+            <div class="stat-lbl">Files Generated</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-val" id="stat-exports">0</div>
+            <div class="stat-lbl">GitHub Exports</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-val" id="stat-msgs">0</div>
+            <div class="stat-lbl">AI Messages</div>
+          </div>
+        </div>
+
+        <div class="section-label">HOW IT WORKS</div>
+        <div class="how-grid" style="margin-bottom:24px">
+          <div class="how-card">
+            <div class="how-num">01 — CONFIGURE</div>
+            <div class="how-title">Add Your API Keys</div>
+            <div class="how-desc">Get a free OpenRouter key at openrouter.ai. Add your GitHub token to enable export to repositories and gists.</div>
+          </div>
+          <div class="how-card">
+            <div class="how-num">02 — BUILD</div>
+            <div class="how-title">Describe Your Project</div>
+            <div class="how-desc">Chat with AI in the Builder tab. Describe what you want to create and watch it generate complete, working code.</div>
+          </div>
+          <div class="how-card">
+            <div class="how-num">03 — EXPORT</div>
+            <div class="how-title">Push to GitHub</div>
+            <div class="how-desc">Export your generated project directly to a new GitHub repository or as a Gist with one click.</div>
+          </div>
+        </div>
+
+        <div class="section-label">RECENT PROJECTS</div>
+        <div class="projects-grid" id="home-projects">
+          <div class="empty-box">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <div>No projects yet — start building in the AI Builder!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUILDER -->
+    <div class="page" id="page-builder">
+      <div class="page-header">
+        <div>
+          <div class="page-title">AI Builder</div>
+          <div class="page-sub">Describe your project · AI generates complete code · Export to GitHub</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="clearChat()">Clear</button>
+          <button class="btn btn-primary btn-sm" onclick="openExport()" id="export-btn" disabled>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+            Export to GitHub
+          </button>
+        </div>
+      </div>
+      <div class="builder-wrap">
+        <!-- CHAT -->
+        <div class="chat-col">
+          <div class="chat-toolbar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            <select class="model-sel" id="model-sel">
+              <option value="deepseek/deepseek-r1:free">DeepSeek R1 — Free (Reasoning)</option>
+              <option value="qwen/qwen-2.5-coder-32b-instruct:free" selected>Qwen 2.5 Coder 32B — Free (Best for Code)</option>
+              <option value="google/gemma-3-27b-it:free">Gemma 3 27B — Free</option>
+              <option value="meta-llama/llama-4-scout:free">Llama 4 Scout — Free</option>
+              <option value="mistralai/mistral-7b-instruct:free">Mistral 7B — Free</option>
+              <option value="microsoft/phi-4:free">Phi 4 — Free</option>
+              <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash Exp — Free</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="openModelDocs()" title="View OpenRouter Models">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-welcome" id="chat-welcome">
+              <div class="welcome-ring">⚡</div>
+              <div class="welcome-title">DevForge AI Builder</div>
+              <div class="welcome-sub">Describe any project and AI will generate complete, production-ready code. Try the quick prompts below to get started.</div>
+            </div>
+          </div>
+          <div class="chat-input-wrap">
+            <div class="quick-chips" id="quick-chips">
+              <div class="chip" onclick="usePrompt('Build a responsive landing page with hero, features section, and contact form')">🌐 Landing Page</div>
+              <div class="chip" onclick="usePrompt('Create a Python REST API with FastAPI, with CRUD endpoints for a todo app')">🐍 Python API</div>
+              <div class="chip" onclick="usePrompt('Build a React dashboard with charts, sidebar navigation, and dark theme')">⚛️ React Dashboard</div>
+              <div class="chip" onclick="usePrompt('Create a Chrome extension that highlights important text on any webpage')">🔌 Chrome Extension</div>
+              <div class="chip" onclick="usePrompt('Build a CLI tool in Node.js that converts markdown files to PDF')">⚙️ CLI Tool</div>
+            </div>
+            <div class="input-row">
+              <textarea class="chat-ta" id="chat-input" placeholder="Describe your project... e.g. 'Build a React todo app with local storage and dark mode'" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+              <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILES -->
+        <div class="files-col">
+          <div class="panel-hdr">
+            <span class="panel-lbl">Generated Files</span>
+            <div style="display:flex;gap:5px">
+              <button class="btn btn-ghost btn-sm" onclick="downloadAllFiles()" id="dl-btn" disabled title="Download as ZIP" style="padding:4px 8px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="clearFiles()" id="clear-files-btn" disabled style="padding:4px 8px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="file-tree" id="file-tree">
+            <!-- Files populated here -->
+          </div>
+          <div id="code-or-empty" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+            <div class="no-files" id="no-files">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Generate code to see files here
+            </div>
+            <div class="code-view" id="code-view" style="display:none">
+              <pre><code id="code-display" class="hljs"></code></pre>
+            </div>
+          </div>
+          <div class="export-bar">
+            <div class="file-count-badge" id="file-count">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+              <span id="file-count-num">0 files</span>
+            </div>
+            <button class="btn btn-purple btn-sm" onclick="openExport()" id="export-btn2" disabled>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+              Export to GitHub
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-sub">Configure API keys and preferences</div>
+        </div>
+      </div>
+      <div class="settings-body">
+        <div class="s-sec">
+          <div class="s-sec-hdr">
+            <div class="s-icon teal">🤖</div>
+            <div>
+              <div class="s-title">OpenRouter API Key</div>
+              <div class="s-desc">Required for AI code generation. Free tier includes access to many powerful models including DeepSeek, Llama, Gemma and more.</div>
+            </div>
+          </div>
+          <div class="f-group">
+            <label class="f-lbl">API KEY</label>
+            <div class="pw-wrap">
+              <input class="f-inp" type="password" id="or-key" placeholder="sk-or-v1-..." autocomplete="off">
+              <button class="pw-toggle" onclick="togglePw('or-key',this)">👁</button>
+            </div>
+            <div class="f-hint">Get your free key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> · No credit card required for free models</div>
+          </div>
+          <div class="f-group">
+            <label class="f-lbl">DEFAULT SITE / APP NAME (optional)</label>
+            <input class="f-inp" type="text" id="or-referer" placeholder="https://yourdomain.com or My App" value="DevForge">
+            <div class="f-hint">Used in OpenRouter request headers for analytics</div>
+          </div>
+          <div class="save-row">
+            <button class="btn btn-ghost btn-sm" onclick="testOpenRouter()">Test Connection</button>
+            <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </div>
+
+        <div class="s-sec">
+          <div class="s-sec-hdr">
+            <div class="s-icon purple" style="font-size:19px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#8b7cf8"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+            </div>
+            <div>
+              <div class="s-title">GitHub Personal Access Token</div>
+              <div class="s-desc">Required to export projects to GitHub repositories or Gists. Needs repo and gist scopes.</div>
+            </div>
+          </div>
+          <div class="f-group">
+            <label class="f-lbl">PERSONAL ACCESS TOKEN</label>
+            <div class="pw-wrap">
+              <input class="f-inp" type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+              <button class="pw-toggle" onclick="togglePw('gh-token',this)">👁</button>
+            </div>
+            <div class="f-hint">
+              Create token at <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a><br>
+              Required scopes: <strong style="color:var(--primary)">repo</strong> (full), <strong style="color:var(--primary)">gist</strong>
+            </div>
+          </div>
+          <div class="save-row">
+            <button class="btn btn-ghost btn-sm" onclick="testGitHub()">Test Connection</button>
+            <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </div>
+
+        <div class="s-sec">
+          <div class="s-sec-hdr">
+            <div class="s-icon gray">⚙️</div>
+            <div>
+              <div class="s-title">Preferred AI Models</div>
+              <div class="s-desc">Select your default free models. All marked FREE require no API credits.</div>
+            </div>
+          </div>
+          <div class="models-grid" id="model-grid">
+            <!-- Populated by JS -->
+          </div>
+          <div class="save-row" style="margin-top:12px">
+            <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save Preferences</button>
+          </div>
+        </div>
+
+        <div class="s-sec">
+          <div class="s-sec-hdr">
+            <div class="s-icon gray">🗑️</div>
+            <div>
+              <div class="s-title">Data Management</div>
+              <div class="s-desc">All data is stored locally in your browser. Nothing is sent to external servers except AI and GitHub API calls.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-danger btn-sm" onclick="clearAllData()">Clear All Data</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportData()">Export Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="overlay" id="export-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2>Export to GitHub</h2>
+      <button class="x-btn" onclick="closeModal('export-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="seg" id="export-type">
+        <div class="seg-opt on" onclick="setExportType('repo')">📁 New Repository</div>
+        <div class="seg-opt" onclick="setExportType('gist')">📋 Gist</div>
+      </div>
+
+      <div id="export-repo-fields">
+        <div class="f-group">
+          <label class="f-lbl">REPOSITORY NAME</label>
+          <input class="f-inp" type="text" id="repo-name" placeholder="my-awesome-project">
+        </div>
+        <div class="f-group">
+          <label class="f-lbl">DESCRIPTION (optional)</label>
+          <input class="f-inp" type="text" id="repo-desc" placeholder="Built with DevForge AI Builder">
+        </div>
+        <div class="radio-grp">
+          <div class="r-item on" onclick="setRepoVis(this,'public')">
+            <div class="r-circle"></div>
+            <div><div class="r-lbl">🌐 Public</div><div class="r-sub">Visible to everyone on GitHub</div></div>
+          </div>
+          <div class="r-item" onclick="setRepoVis(this,'private')">
+            <div class="r-circle"></div>
+            <div><div class="r-lbl">🔒 Private</div><div class="r-sub">Only you can see this repository</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="export-gist-fields" style="display:none">
+        <div class="f-group">
+          <label class="f-lbl">GIST DESCRIPTION</label>
+          <input class="f-inp" type="text" id="gist-desc" placeholder="Generated by DevForge AI Builder">
+        </div>
+        <div class="radio-grp">
+          <div class="r-item on" onclick="setGistVis(this,'public')">
+            <div class="r-circle"></div>
+            <div><div class="r-lbl">🌐 Public Gist</div><div class="r-sub">Discoverable by search engines</div></div>
+          </div>
+          <div class="r-item" onclick="setGistVis(this,'secret')">
+            <div class="r-circle"></div>
+            <div><div class="r-lbl">🔒 Secret Gist</div><div class="r-sub">Not listed publicly (but accessible via URL)</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="export-progress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="exp-prog" style="width:0%"></div></div>
+        <div class="export-log" id="export-log"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('export-modal')">Cancel</button>
+      <button class="btn btn-primary" id="do-export-btn" onclick="doExport()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+        Export to GitHub
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  orKey: '',
+  orReferer: 'DevForge',
+  ghToken: '',
+  defaultModel: 'qwen/qwen-2.5-coder-32b-instruct:free',
+  messages: [],       // {role, content}
+  files: {},          // {filename: content}
+  activeFile: null,
+  projects: [],       // saved projects
+  stats: { projects:0, files:0, exports:0, msgs:0 },
+  exportType: 'repo',
+  repoVis: 'public',
+  gistVis: 'public',
+  isGenerating: false,
+  currentProjectName: ''
+};
+
+const MODELS = [
+  { id:'qwen/qwen-2.5-coder-32b-instruct:free', name:'Qwen 2.5 Coder 32B', desc:'Best for code generation' },
+  { id:'deepseek/deepseek-r1:free', name:'DeepSeek R1', desc:'Advanced reasoning model' },
+  { id:'google/gemma-3-27b-it:free', name:'Gemma 3 27B', desc:'Google\'s instruction model' },
+  { id:'meta-llama/llama-4-scout:free', name:'Llama 4 Scout', desc:'Meta\'s latest model' },
+  { id:'google/gemini-2.0-flash-exp:free', name:'Gemini 2.0 Flash', desc:'Fast multimodal model' },
+  { id:'mistralai/mistral-7b-instruct:free', name:'Mistral 7B', desc:'Efficient & capable' },
+];
+
+const SYSTEM_PROMPT = `You are DevForge AI, an expert full-stack software engineer and project architect. Your role is to generate complete, production-ready, working code projects.
+
+CRITICAL FORMATTING RULES — ALWAYS FOLLOW THESE:
+
+1. For EVERY code file, use this exact format:
+\`\`\`language
+// filename: path/to/filename.ext
+... code content ...
+\`\`\`
+
+2. Language-specific filename comment formats:
+   - HTML: <!-- filename: index.html -->
+   - CSS: /* filename: styles.css */
+   - Python: # filename: main.py
+   - JS/TS: // filename: app.js
+   - JSON: // filename: package.json  (or just mention it before block)
+   - Markdown: <!-- filename: README.md -->
+   - Other: use appropriate comment syntax
+
+3. ALWAYS include a README.md with:
+   - Project description
+   - Setup/installation instructions
+   - Usage examples
+   - Tech stack
+
+4. Generate COMPLETE, fully functional code — no placeholders, no "TODO" comments
+5. Structure files logically with proper organization
+6. Write clean, well-commented, production-quality code
+7. Briefly explain your approach before showing code
+
+When user asks to modify or add features, update the relevant files and show them with the same filename format.`;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  loadSettings();
+  loadProjects();
+  renderModelGrid();
+  renderStats();
+  renderHomeProjects();
+  checkStatuses();
+  
+  marked.setOptions({
+    breaks: true,
+    gfm: true
+  });
+  
+  // Override marked renderer for code blocks
+  const renderer = new marked.Renderer();
+  renderer.code = function(code, lang) {
+    let filename = '';
+    let displayCode = typeof code === 'object' ? code.text : code;
+    const langStr = (typeof code === 'object' ? code.lang : lang) || '';
+    
+    // Extract filename from first line comment
+    const lines = displayCode.split('\n');
+    const firstLine = lines[0].trim();
+    const fnMatch = firstLine.match(/(?:\/\/|#|<!--|\/\*)\s*filename:\s*([^\s*-->]+)/i);
+    if (fnMatch) {
+      filename = fnMatch[1].trim();
+      displayCode = lines.slice(1).join('\n');
+    }
+    
+    const highlighted = langStr && hljs.getLanguage(langStr)
+      ? hljs.highlight(displayCode, { language: langStr, ignoreIllegals: true }).value
+      : hljs.highlightAuto(displayCode).value;
+    
+    const id = 'cb-' + Math.random().toString(36).substr(2,6);
+    return `<pre>
+      <div class="code-top">
+        <span class="code-lang">${langStr || 'code'}</span>
+        ${filename ? `<span class="code-fname">${filename}</span>` : ''}
+        <button class="copy-code" onclick="copyCode('${id}')">copy</button>
+      </div>
+      <code id="${id}" class="hljs language-${langStr}">${highlighted}</code>
+    </pre>`;
+  };
+  marked.use({ renderer });
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('devforge_settings') || '{}');
+    state.orKey = s.orKey || '';
+    state.orReferer = s.orReferer || 'DevForge';
+    state.ghToken = s.ghToken || '';
+    state.defaultModel = s.defaultModel || state.defaultModel;
+    state.stats = s.stats || state.stats;
+    
+    if (document.getElementById('or-key')) {
+      document.getElementById('or-key').value = state.orKey;
+      document.getElementById('or-referer').value = state.orReferer;
+      document.getElementById('gh-token').value = state.ghToken;
+      document.getElementById('model-sel').value = state.defaultModel;
+    }
+  } catch(e) {}
+}
+
+function saveSettings() {
+  state.orKey = document.getElementById('or-key').value.trim();
+  state.orReferer = document.getElementById('or-referer').value.trim() || 'DevForge';
+  state.ghToken = document.getElementById('gh-token').value.trim();
+  
+  const selModel = document.querySelector('.m-opt.sel');
+  if (selModel) state.defaultModel = selModel.dataset.id;
+  document.getElementById('model-sel').value = state.defaultModel;
+  
+  localStorage.setItem('devforge_settings', JSON.stringify({
+    orKey: state.orKey, orReferer: state.orReferer,
+    ghToken: state.ghToken, defaultModel: state.defaultModel,
+    stats: state.stats
+  }));
+  checkStatuses();
+  toast('Settings saved!', 'ok');
+}
+
+function loadProjects() {
+  try {
+    state.projects = JSON.parse(localStorage.getItem('devforge_projects') || '[]');
+  } catch(e) { state.projects = []; }
+}
+
+function saveProjects() {
+  localStorage.setItem('devforge_projects', JSON.stringify(state.projects));
+}
+
+function saveStats() {
+  try {
+    const s = JSON.parse(localStorage.getItem('devforge_settings') || '{}');
+    s.stats = state.stats;
+    localStorage.setItem('devforge_settings', JSON.stringify(s));
+  } catch(e) {}
+}
+
+function renderStats() {
+  document.getElementById('stat-projects').textContent = state.stats.projects;
+  document.getElementById('stat-files').textContent = state.stats.files;
+  document.getElementById('stat-exports').textContent = state.stats.exports;
+  document.getElementById('stat-msgs').textContent = state.stats.msgs;
+}
+
+function renderHomeProjects() {
+  const el = document.getElementById('home-projects');
+  if (!state.projects.length) {
+    el.innerHTML = `<div class="empty-box">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <div>No projects yet — start building in the AI Builder!</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = state.projects.slice().reverse().map(p => `
+    <div class="proj-card" onclick="loadProject('${p.id}')">
+      <div class="proj-name">${p.name}</div>
+      <div class="proj-meta">${p.fileCount} files · ${timeAgo(p.created)}</div>
+      <div class="proj-tags">${p.langs.map(l=>`<span class="tag">${l}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function renderModelGrid() {
+  const el = document.getElementById('model-grid');
+  if (!el) return;
+  el.innerHTML = MODELS.map(m => `
+    <div class="m-opt ${m.id === state.defaultModel ? 'sel' : ''}" data-id="${m.id}" onclick="selectModel(this,'${m.id}')">
+      <div class="m-name">${m.name}</div>
+      <div><span class="m-free">FREE</span></div>
+      <div class="m-desc">${m.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectModel(el, id) {
+  document.querySelectorAll('.m-opt').forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+// ─── STATUS CHECKS ────────────────────────────────────────────────────────────
+async function checkStatuses() {
+  const dotOR = document.getElementById('dot-or');
+  const dotGH = document.getElementById('dot-gh');
+  
+  dotOR.className = 'dot checking';
+  dotGH.className = 'dot checking';
+  
+  if (state.orKey) {
+    try {
+      const r = await fetch('https://openrouter.ai/api/v1/models', {
+        headers: { 'Authorization': `Bearer ${state.orKey}` }
+      });
+      dotOR.className = r.ok ? 'dot ok' : 'dot';
+    } catch { dotOR.className = 'dot'; }
+  } else { dotOR.className = 'dot'; }
+  
+  if (state.ghToken) {
+    try {
+      const r = await fetch('https://api.github.com/user', {
+        headers: { 'Authorization': `token ${state.ghToken}` }
+      });
+      dotGH.className = r.ok ? 'dot ok' : 'dot';
+    } catch { dotGH.className = 'dot'; }
+  } else { dotGH.className = 'dot'; }
+}
+
+async function testOpenRouter() {
+  const key = document.getElementById('or-key').value.trim();
+  if (!key) { toast('Enter your OpenRouter API key first', 'err'); return; }
+  toast('Testing OpenRouter connection...', 'inf');
+  try {
+    const r = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: { 'Authorization': `Bearer ${key}` }
+    });
+    if (r.ok) {
+      const d = await r.json();
+      const freeCount = d.data?.filter(m => m.id.includes(':free')).length || 0;
+      toast(`✓ Connected! ${freeCount} free models available`, 'ok');
+      document.getElementById('dot-or').className = 'dot ok';
+    } else {
+      const e = await r.json();
+      toast(`Error: ${e.error?.message || 'Invalid API key'}`, 'err');
+    }
+  } catch(e) { toast('Connection failed: ' + e.message, 'err'); }
+}
+
+async function testGitHub() {
+  const token = document.getElementById('gh-token').value.trim();
+  if (!token) { toast('Enter your GitHub token first', 'err'); return; }
+  toast('Testing GitHub connection...', 'inf');
+  try {
+    const r = await fetch('https://api.github.com/user', {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (r.ok) {
+      const d = await r.json();
+      toast(`✓ Connected as @${d.login}`, 'ok');
+      document.getElementById('dot-gh').className = 'dot ok';
+    } else {
+      toast('Invalid GitHub token or insufficient scopes', 'err');
+    }
+  } catch(e) { toast('Connection failed: ' + e.message, 'err'); }
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+  if (page === 'home') renderHomeProjects();
+}
+
+// ─── CHAT & AI ────────────────────────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function usePrompt(text) {
+  document.getElementById('chat-input').value = text;
+  autoResize(document.getElementById('chat-input'));
+  document.getElementById('chat-input').focus();
+}
+
+async function sendMessage() {
+  if (state.isGenerating) return;
+  
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  if (!state.orKey) {
+    toast('Please add your OpenRouter API key in Settings first', 'err');
+    nav('settings');
+    return;
+  }
+  
+  // Hide welcome, hide quick chips after first message
+  document.getElementById('chat-welcome')?.remove();
+  document.getElementById('quick-chips').style.display = 'none';
+  
+  state.messages.push({ role: 'user', content: text });
+  appendMessage('user', text);
+  input.value = '';
+  input.style.height = 'auto';
+  
+  state.stats.msgs++;
+  renderStats();
+  
+  // Thinking indicator
+  const thinkId = 'think-' + Date.now();
+  appendThinking(thinkId);
+  
+  state.isGenerating = true;
+  document.getElementById('send-btn').disabled = true;
+  
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${state.orKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': state.orReferer || 'DevForge',
+        'X-Title': 'DevForge AI Builder'
+      },
+      body: JSON.stringify({
+        model: document.getElementById('model-sel').value,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...state.messages
+        ],
+        stream: true,
+        max_tokens: 8000
+      })
+    });
+    
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+    
+    // Remove thinking
+    document.getElementById(thinkId)?.remove();
+    
+    // Stream response
+    const msgEl = appendMessage('ai', '', true);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            fullContent += delta;
+            msgEl.innerHTML = marked.parse(fullContent);
+            msgEl.classList.add('typing-cur');
+            scrollChat();
+          }
+        } catch {}
+      }
+    }
+    
+    msgEl.classList.remove('typing-cur');
+    state.messages.push({ role: 'assistant', content: fullContent });
+    state.stats.msgs++;
+    
+    // Extract files
+    const extracted = extractFiles(fullContent);
+    if (Object.keys(extracted).length > 0) {
+      mergeFiles(extracted);
+      updateProjectName(text);
+    }
+    
+    renderStats();
+    saveStats();
+    
+  } catch(e) {
+    document.getElementById(thinkId)?.remove();
+    const errEl = appendMessage('ai', `**Error:** ${e.message}\n\nPlease check your API key and try again.`, false);
+    console.error(e);
+    toast('Generation failed: ' + e.message, 'err');
+  } finally {
+    state.isGenerating = false;
+    document.getElementById('send-btn').disabled = false;
+  }
+}
+
+function appendMessage(role, content, streaming = false) {
+  const container = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className = `msg ${role}`;
+  
+  const avatar = role === 'user' ? 'U' : '⚡';
+  const bubClass = 'msg-bub';
+  
+  el.innerHTML = `
+    <div class="msg-av">${avatar}</div>
+    <div class="msg-body">
+      <div class="${bubClass}" ${streaming ? '' : ''}>${content ? marked.parse(content) : ''}</div>
+    </div>
+  `;
+  
+  container.appendChild(el);
+  scrollChat();
+  return el.querySelector('.msg-bub');
+}
+
+function appendThinking(id) {
+  const container = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  el.id = id;
+  el.innerHTML = `
+    <div class="msg-av">⚡</div>
+    <div class="msg-body">
+      <div class="thinking-bub">
+        <div class="dots">
+          <div class="dot-a"></div><div class="dot-a"></div><div class="dot-a"></div>
+        </div>
+        Generating code...
+      </div>
+    </div>`;
+  container.appendChild(el);
+  scrollChat();
+}
+
+function scrollChat() {
+  const c = document.getElementById('chat-messages');
+  c.scrollTop = c.scrollHeight;
+}
+
+function clearChat() {
+  state.messages = [];
+  const c = document.getElementById('chat-messages');
+  c.innerHTML = `<div class="chat-welcome" id="chat-welcome">
+    <div class="welcome-ring">⚡</div>
+    <div class="welcome-title">DevForge AI Builder</div>
+    <div class="welcome-sub">Describe any project and AI will generate complete, production-ready code. Try the quick prompts below to get started.</div>
+  </div>`;
+  document.getElementById('quick-chips').style.display = 'flex';
+  toast('Chat cleared', 'inf');
+}
+
+// ─── FILE EXTRACTION ──────────────────────────────────────────────────────────
+function extractFiles(content) {
+  const files = {};
+  
+  // Match code blocks with filename in first line comment
+  const blockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  let match;
+  
+  while ((match = blockRegex.exec(content)) !== null) {
+    const lang = match[1] || '';
+    const code = match[2];
+    const lines = code.split('\n');
+    const firstLine = lines[0].trim();
+    
+    // Try to extract filename from first line
+    const fnPatterns = [
+      /\/\/\s*filename:\s*(.+)/i,
+      /<!--\s*filename:\s*(.+?)\s*-->/i,
+      /#\s*filename:\s*(.+)/i,
+      /\/\*\s*filename:\s*(.+?)\s*\*\//i,
+      /\/\/\s*file:\s*(.+)/i,
+    ];
+    
+    let filename = null;
+    for (const pat of fnPatterns) {
+      const fm = firstLine.match(pat);
+      if (fm) { filename = fm[1].trim(); break; }
+    }
+    
+    if (filename) {
+      const fileContent = lines.slice(1).join('\n').trim();
+      files[filename] = fileContent;
+    } else {
+      // Try to guess filename from lang
+      if (lang && !files['unnamed.' + lang]) {
+        const ext = langToExt(lang);
+        const guessName = `main.${ext}`;
+        if (!files[guessName]) files[guessName] = code.trim();
+      }
+    }
+  }
+  
+  return files;
+}
+
+function langToExt(lang) {
+  const map = { javascript:'js', typescript:'ts', python:'py', html:'html', css:'css',
+    bash:'sh', shell:'sh', json:'json', yaml:'yml', markdown:'md', rust:'rs',
+    go:'go', java:'java', cpp:'cpp', c:'c', ruby:'rb', php:'php' };
+  return map[lang.toLowerCase()] || lang;
+}
+
+function mergeFiles(newFiles) {
+  let added = 0;
+  for (const [name, content] of Object.entries(newFiles)) {
+    if (!state.files[name]) added++;
+    state.files[name] = content;
+  }
+  
+  renderFileTree();
+  
+  // Auto-select first file if none active
+  if (!state.activeFile || !state.files[state.activeFile]) {
+    const first = Object.keys(state.files)[0];
+    if (first) selectFile(first);
+  }
+  
+  updateExportButtons();
+  
+  state.stats.files = Object.keys(state.files).length;
+  renderStats();
+}
+
+function renderFileTree() {
+  const tree = document.getElementById('file-tree');
+  const files = Object.keys(state.files);
+  
+  if (!files.length) {
+    tree.innerHTML = '';
+    return;
+  }
+  
+  tree.innerHTML = files.map(f => {
+    const ext = f.split('.').pop();
+    return `<div class="f-item ${state.activeFile === f ? 'active' : ''}" onclick="selectFile('${f.replace(/'/g,"\\'")}')">
+      <span>${fileIcon(ext)}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${f}</span>
+      <span class="f-ext">.${ext}</span>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('file-count-num').textContent = files.length + ' file' + (files.length !== 1 ? 's' : '');
+}
+
+function fileIcon(ext) {
+  const icons = { js:'🟨', ts:'🔷', html:'🟧', css:'🟦', py:'🐍', md:'📄',
+    json:'📋', sh:'⚙️', yml:'⚙️', yaml:'⚙️', rs:'🦀', go:'🐹', java:'☕',
+    cpp:'⚡', c:'⚡', rb:'💎', php:'🐘', vue:'💚', jsx:'⚛️', tsx:'⚛️' };
+  return icons[ext] || '📄';
+}
+
+function selectFile(filename) {
+  state.activeFile = filename;
+  const content = state.files[filename];
+  const ext = filename.split('.').pop();
+  const lang = extToLang(ext);
+  
+  const codeDisplay = document.getElementById('code-display');
+  const highlighted = lang && hljs.getLanguage(lang)
+    ? hljs.highlight(content, { language: lang, ignoreIllegals: true }).value
+    : hljs.highlightAuto(content).value;
+  
+  codeDisplay.innerHTML = highlighted;
+  document.getElementById('no-files').style.display = 'none';
+  document.getElementById('code-view').style.display = 'block';
+  
+  renderFileTree();
+}
+
+function extToLang(ext) {
+  const map = { js:'javascript', ts:'typescript', py:'python', html:'html',
+    css:'css', json:'json', sh:'bash', yml:'yaml', yaml:'yaml', md:'markdown',
+    rs:'rust', go:'go', java:'java', cpp:'cpp', c:'c', rb:'ruby', php:'php',
+    jsx:'javascript', tsx:'typescript', vue:'html' };
+  return map[ext] || null;
+}
+
+function clearFiles() {
+  state.files = {};
+  state.activeFile = null;
+  renderFileTree();
+  document.getElementById('no-files').style.display = 'flex';
+  document.getElementById('code-view').style.display = 'none';
+  updateExportButtons();
+  state.stats.files = 0;
+  renderStats();
+  document.getElementById('file-count-num').textContent = '0 files';
+}
+
+function updateExportButtons() {
+  const hasFiles = Object.keys(state.files).length > 0;
+  document.getElementById('export-btn').disabled = !hasFiles;
+  document.getElementById('export-btn2').disabled = !hasFiles;
+  document.getElementById('dl-btn').disabled = !hasFiles;
+  document.getElementById('clear-files-btn').disabled = !hasFiles;
+  
+  const badge = document.getElementById('proj-badge');
+  const count = Object.keys(state.files).length;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+  badge.textContent = count;
+}
+
+function updateProjectName(prompt) {
+  if (!state.currentProjectName) {
+    state.currentProjectName = prompt.substring(0, 40).replace(/[^a-zA-Z0-9\s-]/g, '').trim()
+      .replace(/\s+/g, '-').toLowerCase() || 'my-project';
+    document.getElementById('repo-name').value = state.currentProjectName;
+  }
+}
+
+// ─── FILE DOWNLOAD ─────────────────────────────────────────────────────────────
+async function downloadAllFiles() {
+  // Download as individual files or simple text bundle
+  const files = state.files;
+  if (!Object.keys(files).length) return;
+  
+  // Create a simple bundle text file
+  let bundle = '# DevForge Project Bundle\n\n';
+  for (const [name, content] of Object.entries(files)) {
+    bundle += `\n${'='.repeat(60)}\n## File: ${name}\n${'='.repeat(60)}\n\n${content}\n`;
+  }
+  
+  const blob = new Blob([bundle], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (state.currentProjectName || 'devforge-project') + '-bundle.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Project downloaded!', 'ok');
+}
+
+// ─── COPY CODE ─────────────────────────────────────────────────────────────────
+function copyCode(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => toast('Copied!', 'ok'));
+}
+
+// ─── EXPORT MODAL ─────────────────────────────────────────────────────────────
+function openExport() {
+  if (!Object.keys(state.files).length) { toast('No files to export', 'err'); return; }
+  if (!state.ghToken) { toast('Add your GitHub token in Settings first', 'err'); nav('settings'); return; }
+  
+  // Reset modal
+  document.getElementById('export-progress').style.display = 'none';
+  document.getElementById('export-repo-fields').style.display = 'block';
+  document.getElementById('export-gist-fields').style.display = 'none';
+  document.getElementById('export-log').innerHTML = '';
+  document.getElementById('exp-prog').style.width = '0%';
+  document.getElementById('do-export-btn').disabled = false;
+  document.getElementById('repo-desc').value = 'Generated with DevForge AI Builder';
+  if (!document.getElementById('repo-name').value) {
+    document.getElementById('repo-name').value = state.currentProjectName || 'my-project';
+  }
+  document.getElementById('gist-desc').value = 'Generated with DevForge AI Builder';
+  
+  setExportType('repo');
+  document.getElementById('export-modal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function setExportType(type) {
+  state.exportType = type;
+  document.querySelectorAll('#export-type .seg-opt').forEach((el, i) => {
+    el.classList.toggle('on', (type === 'repo' && i === 0) || (type === 'gist' && i === 1));
+  });
+  document.getElementById('export-repo-fields').style.display = type === 'repo' ? 'block' : 'none';
+  document.getElementById('export-gist-fields').style.display = type === 'gist' ? 'block' : 'none';
+}
+
+function setRepoVis(el, vis) {
+  state.repoVis = vis;
+  document.querySelectorAll('#export-repo-fields .r-item').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function setGistVis(el, vis) {
+  state.gistVis = vis;
+  document.querySelectorAll('#export-gist-fields .r-item').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function logExport(msg, type = 'info') {
+  const log = document.getElementById('export-log');
+  const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : 'log-info';
+  const icon = type === 'ok' ? '✓' : type === 'err' ? '✗' : '→';
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="${cls}">${icon}</span><span>${msg}</span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function doExport() {
+  if (!state.ghToken) { toast('No GitHub token configured', 'err'); return; }
+  
+  document.getElementById('export-progress').style.display = 'block';
+  document.getElementById('do-export-btn').disabled = true;
+  document.getElementById('export-log').innerHTML = '';
+  
+  try {
+    if (state.exportType === 'gist') {
+      await exportAsGist();
+    } else {
+      await exportAsRepo();
+    }
+    
+    state.stats.exports++;
+    state.stats.projects++;
+    saveProjectToHistory();
+    renderStats();
+    saveStats();
+    
+    setTimeout(() => {
+      closeModal('export-modal');
+      document.getElementById('do-export-btn').disabled = false;
+      renderHomeProjects();
+    }, 2000);
+    
+  } catch(e) {
+    logExport('Export failed: ' + e.message, 'err');
+    toast('Export failed: ' + e.message, 'err');
+    document.getElementById('do-export-btn').disabled = false;
+  }
+}
+
+async function exportAsGist() {
+  const desc = document.getElementById('gist-desc').value || 'DevForge Project';
+  const isPublic = state.gistVis === 'public';
+  
+  logExport('Preparing files for Gist...');
+  document.getElementById('exp-prog').style.width = '30%';
+  
+  const gistFiles = {};
+  for (const [name, content] of Object.entries(state.files)) {
+    const safeName = name.replace(/\//g, '_');
+    gistFiles[safeName] = { content: content || ' ' };
+  }
+  
+  logExport(`Creating ${isPublic ? 'public' : 'secret'} Gist...`);
+  document.getElementById('exp-prog').style.width = '60%';
+  
+  const response = await fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: {
+      'Authorization': `token ${state.ghToken}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.github.v3+json'
+    },
+    body: JSON.stringify({ description: desc, public: isPublic, files: gistFiles })
+  });
+  
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || 'Failed to create Gist');
+  }
+  
+  const data = await response.json();
+  document.getElementById('exp-prog').style.width = '100%';
+  logExport(`Gist created successfully!`, 'ok');
+  logExport(`URL: ${data.html_url}`, 'ok');
+  toast('Gist exported! Opening in browser...', 'ok');
+  
+  setTimeout(() => window.open(data.html_url, '_blank'), 1000);
+}
+
+async function exportAsRepo() {
+  const repoName = document.getElementById('repo-name').value.trim();
+  if (!repoName) throw new Error('Repository name is required');
+  const desc = document.getElementById('repo-desc').value || 'DevForge Project';
+  const isPrivate = state.repoVis === 'private';
+  
+  // Get username
+  logExport('Fetching GitHub user info...');
+  const userRes = await fetch('https://api.github.com/user', {
+    headers: { 'Authorization': `token ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if (!userRes.ok) throw new Error('Cannot fetch GitHub user. Check your token.');
+  const user = await userRes.json();
+  
+  document.getElementById('exp-prog').style.width = '15%';
+  logExport(`Logged in as @${user.login}`);
+  
+  // Create repository
+  logExport(`Creating repository "${repoName}"...`);
+  const repoRes = await fetch('https://api.github.com/user/repos', {
+    method: 'POST',
+    headers: {
+      'Authorization': `token ${state.ghToken}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.github.v3+json'
+    },
+    body: JSON.stringify({
+      name: repoName, description: desc,
+      private: isPrivate, auto_init: false
+    })
+  });
+  
+  if (!repoRes.ok) {
+    const err = await repoRes.json();
+    throw new Error(err.message || 'Failed to create repository');
+  }
+  
+  const repo = await repoRes.json();
+  document.getElementById('exp-prog').style.width = '30%';
+  logExport(`Repository created: ${repo.full_name}`, 'ok');
+  
+  // Upload files
+  const files = Object.entries(state.files);
+  const total = files.length;
+  
+  for (let i = 0; i < files.length; i++) {
+    const [filename, content] = files[i];
+    logExport(`Uploading ${filename}...`);
+    
+    // Encode content to base64
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+    
+    const fileRes = await fetch(
+      `https://api.github.com/repos/${user.login}/${repoName}/contents/${filename}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${state.ghToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify({
+          message: `Add ${filename} via DevForge AI Builder`,
+          content: encoded
+        })
+      }
+    );
+    
+    if (!fileRes.ok) {
+      const err = await fileRes.json();
+      logExport(`Warning: ${filename} — ${err.message}`, 'err');
+    } else {
+      logExport(`Uploaded ${filename}`, 'ok');
+    }
+    
+    document.getElementById('exp-prog').style.width = (30 + ((i + 1) / total) * 65) + '%';
+  }
+  
+  document.getElementById('exp-prog').style.width = '100%';
+  logExport(`Export complete! ${total} files uploaded.`, 'ok');
+  logExport(`Repo: ${repo.html_url}`, 'ok');
+  toast('Repository created! Opening in browser...', 'ok');
+  
+  setTimeout(() => window.open(repo.html_url, '_blank'), 1000);
+}
+
+function saveProjectToHistory() {
+  const name = state.currentProjectName || 'Project ' + (state.projects.length + 1);
+  const langs = [...new Set(Object.keys(state.files).map(f => f.split('.').pop()))].slice(0, 5);
+  state.projects.push({
+    id: 'p' + Date.now(),
+    name, fileCount: Object.keys(state.files).length,
+    langs, created: Date.now()
+  });
+  saveProjects();
+}
+
+function loadProject(id) {
+  toast('Project history is view-only in this version', 'inf');
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'inf') {
+  const container = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { ok:'✓', err:'✗', inf:'ℹ' };
+  el.innerHTML = `<span>${icons[type]||'ℹ'}</span>${msg}`;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(16px)'; el.style.transition = 'all .3s'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+function timeAgo(ts) {
+  const secs = Math.floor((Date.now() - ts) / 1000);
+  if (secs < 60) return 'just now';
+  if (secs < 3600) return Math.floor(secs/60) + 'm ago';
+  if (secs < 86400) return Math.floor(secs/3600) + 'h ago';
+  return Math.floor(secs/86400) + 'd ago';
+}
+
+function clearAllData() {
+  if (!confirm('This will clear all settings, projects, and data. Continue?')) return;
+  localStorage.removeItem('devforge_settings');
+  localStorage.removeItem('devforge_projects');
+  location.reload();
+}
+
+function exportData() {
+  const data = {
+    settings: JSON.parse(localStorage.getItem('devforge_settings') || '{}'),
+    projects: JSON.parse(localStorage.getItem('devforge_projects') || '[]')
+  };
+  // Remove sensitive keys
+  delete data.settings.orKey;
+  delete data.settings.ghToken;
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'devforge-settings.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Settings exported (without API keys)', 'ok');
+}
+
+function openModelDocs() {
+  window.open('https://openrouter.ai/models?q=free', '_blank');
+}
+
+// ─── START ────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
